@@ -1,0 +1,16 @@
+{
+  "name": "common-shake",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Fedor Indutny <fedor@indutny.com> (http://darksi.de/)",
+  "license": "MIT",
+  "dependencies": {
+    "escope": "^3.6.0",
+    "estraverse": "^4.2.0"
+  }
+}
