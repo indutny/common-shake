@@ -133,6 +133,40 @@ describe('Analyzer', () => {
     });
   });
 
+  it('should not count redefined variable as import', () => {
+    analyzer.run(parse(`
+      var lib = require('./a');
+
+      lib.a();
+
+      var lib = {};
+      lib.b();
+    `), 'root');
+
+    analyzer.run(parse(`
+      exports.a = 1;
+      exports.b = 2;
+    `), 'a');
+
+    analyzer.resolve('root', './a', 'a');
+
+    assert.deepEqual(analyzer.getModule('root').getInfo(), EMPTY);
+    assert.deepEqual(analyzer.getModule('a').getInfo(), {
+      bailouts: [
+        {
+          loc: {
+            start: { column: 10, line: 2 },
+            end: { column: 30, line: 2 }
+          },
+          source: 'root',
+          reason: '`require` variable override'
+        }
+      ],
+      uses: [],
+      declarations: [ 'a', 'b' ]
+    });
+  });
+
   it('should bailout on assignment to `exports`', () => {
     analyzer.run(parse(`
       exports = {};
