@@ -52,7 +52,7 @@ describe('Analyzer', () => {
 
       lib.a();
       lib.b();
-      lib.c();
+      require('./a').c();
     `), 'root');
 
     analyzer.run(parse(`
@@ -103,6 +103,40 @@ describe('Analyzer', () => {
         },
         source: null,
         reason: '`exports` assignment'
+      }
+    ]);
+  });
+
+  it('should bailout on assignment to `require`', () => {
+    analyzer.run(parse(`
+      require = () => {};
+    `), 'root');
+
+    assert.deepEqual(analyzer.getModule('root').getInfo().bailouts, [
+      {
+        loc: {
+          start: { column: 6, line: 2 },
+          end: { column: 24, line: 2 }
+        },
+        source: null,
+        reason: '`require` assignment'
+      }
+    ]);
+  });
+
+  it('should bailout on dynamic `require`', () => {
+    analyzer.run(parse(`
+      const lib = require(Math.random());
+    `), 'root');
+
+    assert.deepEqual(analyzer.getModule('root').getInfo().bailouts, [
+      {
+        loc: {
+          start: { column: 18, line: 2 },
+          end: { column: 40, line: 2 }
+        },
+        source: null,
+        reason: 'Dynamic argument of `require`'
       }
     ]);
   });
