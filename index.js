@@ -3,11 +3,11 @@
 const escope = require('escope');
 const estraverse = require('estraverse');
 
-function Module(name) {
-  this.name = name;
+function Module(file) {
+  this.file = file;
   this.bailoutReason = false;
   this.uses = new Set();
-  this.declarations = new Set();
+  this.declarations = [];
 }
 
 Module.prototype.bailout = function bailout(reason) {
@@ -19,23 +19,49 @@ Module.prototype.use = function use(prop) {
 };
 
 Module.prototype.declare = function declare(prop) {
-  this.declarations.add(prop);
+  this.declarations.push(prop);
 };
 
-function ShakeParserPlugin(current, modules) {
+Module.prototype.mergeFrom = function mergeFrom(unresolved) {
+  if (!this.bailoutReason)
+    this.bailoutReason = unresolved.bailoutReason;
+
+  unresolved.uses.forEach(use => this.use(use));
+  unresolved.declarations.forEach(declaration => this.declare(declaration));
+  unresolved.clear();
+};
+
+Module.prototype.clear = function clear() {
+  this.uses = null;
+  this.declarations = null;
+};
+
+Module.prototype.removeUnused = function removeUnused() {
+  if (this.bailoutReason)
+    return;
+
+  this.declarations.forEach((declaration) => {
+    const name = declaration.name;
+    const ast = declaration.ast;
+
+    if (!this.uses.has(name))
+      ast.right = { type: 'Literal', value: null };
+  });
+};
+
+function ShakeParserPlugin(shaker) {
+  this.shaker = shaker;
   this.moduleUses = new Map();
-  this.current = current;
-  this.modules = modules;
 }
 
 ShakeParserPlugin.prototype.apply = function apply(parser) {
   parser.plugin('program', (ast) => {
-    this.gather(ast);
-    this.sift(ast);
+    this.gather(ast, parser.state.current);
+    this.sift(ast, this.shaker.getModule(parser.state.current.resource));
   });
 };
 
-ShakeParserPlugin.prototype.gather = function gather(ast) {
+ShakeParserPlugin.prototype.gather = function gather(ast, state) {
   const manager = escope.analyze(ast, {
     nodejsScope: true
   });
@@ -62,6 +88,7 @@ ShakeParserPlugin.prototype.gather = function gather(ast) {
   for (let i = 0; i < declarations.length; i++) {
     const decl = declarations[i];
 
+    // TODO(indutny): multiple definitions mean that we have to bailout
     if (decl.defs.length !== 1)
       continue;
 
@@ -89,33 +116,33 @@ ShakeParserPlugin.prototype.gather = function gather(ast) {
     if (typeof name !== 'string')
       continue;
 
-    let module;
-    if (this.modules.has(name)) {
-      module = this.modules.get(name);
-    } else {
-      module = new Module(name);
-      this.modules.set(name, module);
-    }
+    const module = this.shaker.getUnresolvedModule(state.resource, name);
 
     for (let i = 0; i < decl.references.length; i++) {
       const ref = decl.references[i];
-      this.moduleUses.set(ref.identifier, module);
+      if (ref.identifier !== node.id)
+        this.moduleUses.set(ref.identifier, module);
     }
   }
 };
 
-ShakeParserPlugin.prototype.sift = function sift(ast) {
+ShakeParserPlugin.prototype.sift = function sift(ast, current) {
   estraverse.traverse(ast, {
     enter: (node) => {
       if (node.type === 'AssignmentExpression')
-        this.siftAssignment(node);
+        this.siftAssignment(node, current);
       else if (node.type === 'MemberExpression')
         this.siftMember(node);
     }
   });
+
+  this.moduleUses.forEach((module, use) => {
+    module.bailout('Strange uses');
+  });
 };
 
-ShakeParserPlugin.prototype.siftAssignment = function siftAssignment(node) {
+ShakeParserPlugin.prototype.siftAssignment = function siftAssignment(node,
+                                                                     current) {
   if (node.left.type !== 'MemberExpression')
     return;
 
@@ -131,22 +158,21 @@ ShakeParserPlugin.prototype.siftAssignment = function siftAssignment(node) {
     return;
 
   const object = member.object.name;
-
   if (object !== 'exports' && object !== 'module')
     return;
 
   if (member.property.type !== (member.computed ? 'Literal' : 'Identifier')) {
-    this.current.bailout('Dynamic CommonJS export');
+    current.bailout('Dynamic CommonJS export');
     return;
   }
 
   if (object === 'module') {
-    this.current.bailout('module.exports assignment');
+    current.bailout('module.exports assignment');
     return;
   }
 
-  const prop = member.property.name || member.property.value;
-  this.current.declare(prop);
+  const name = member.property.name || member.property.value;
+  current.declare({ name, ast: node });
 };
 
 ShakeParserPlugin.prototype.siftMember = function siftMember(node) {
@@ -154,6 +180,7 @@ ShakeParserPlugin.prototype.siftMember = function siftMember(node) {
     return;
 
   const module = this.moduleUses.get(node.object);
+  this.moduleUses.delete(node.object);
 
   if (node.property.type !== (node.computed ? 'Literal' : 'Identifier')) {
     module.bailout('Dynamic CommonJS import');
@@ -165,27 +192,86 @@ ShakeParserPlugin.prototype.siftMember = function siftMember(node) {
 };
 
 function ShakePlugin() {
+  this.modules = new Map();
+  this.unresolved = new Map();
+  this.resolution = new Map();
 }
+
+ShakePlugin.prototype.getModule = function getModule(file) {
+  let module;
+  if (this.modules.has(file)) {
+    module = this.modules.get(file);
+  } else {
+    module = new Module(file);
+    this.modules.set(file, module);
+  }
+  return module;
+};
+
+ShakePlugin.prototype.getUnresolvedModule = function getUnresolvedModule(issuer,
+                                                                         name) {
+  let issuerMap;
+  if (this.unresolved.has(issuer)) {
+    issuerMap = this.unresolved.get(issuer);
+  } else {
+    issuerMap = new Map();
+    this.unresolved.set(issuer, issuerMap);
+  }
+
+  let module;
+  if (issuerMap.has(name)) {
+    module = issuerMap.get(name);
+  } else {
+    module = new Module(null);
+    issuerMap.set(name, module);
+  }
+
+  // Already resolved
+  if (typeof module === 'string')
+    return this.getModule(module);
+
+  return module;
+};
+
+ShakePlugin.prototype.resolve = function resolve(issuer, name, to) {
+  const unresolved = this.getUnresolvedModule(issuer, name);
+  const resolved = this.getModule(to);
+  resolved.mergeFrom(unresolved);
+  this.unresolved.get(issuer).set(name, to);
+};
 
 ShakePlugin.prototype.apply = function apply(compiler) {
   compiler.plugin('compilation', (compilation, params) => {
+    const imports = new Map();
+
     params.normalModuleFactory.plugin('parser', (parser, parserOptions) => {
       if (typeof parserOptions.commonjs !== 'undefined' &&
         !parserOptions.commonjs) {
         return;
       }
 
-      parser.apply(new ShakeParserPlugin(new Module('current'), new Map()));
+      parser.apply(new ShakeParserPlugin(this));
     });
 
-    compilation.plugin('optimize-modules-advanced', (modules) => {
-      modules.forEach(module => this._applyModule(module));
+    params.normalModuleFactory.plugin('create-module', (module) => {
+      const issuer = module.resourceResolveData.context.issuer;
+      if (issuer === null)
+        return;
+      this.resolve(issuer, module.rawRequest, module.resource);
+    });
+
+    compilation.plugin('optimize-chunk-modules', (chunks, modules) => {
+      modules.forEach(module => this.applyModule(module));
     });
   });
 };
 
-ShakePlugin.prototype._applyModule = function _applyModule(module) {
-//  console.log(module.dependencies.map(dep => dep.loc));
+ShakePlugin.prototype.applyModule = function applyModule(module) {
+  // TODO(indutny): figure out why it happens
+  if (typeof module.resource !== 'string')
+    return;
+
+  this.getModule(module.resource).removeUnused();
 };
 
 module.exports = ShakePlugin;
