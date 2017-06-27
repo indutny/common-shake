@@ -89,6 +89,50 @@ describe('Analyzer', () => {
     });
   });
 
+  it('should not count disguised `exports` use as export', () => {
+    analyzer.run(parse(`
+      function a() {
+        var exports = {};
+        exports.a = a;
+      }
+
+      exports.b = 1;
+    `), 'root');
+
+    assert.deepEqual(analyzer.getModule('root').getInfo(), {
+      bailouts: false,
+      uses: [],
+      declarations: [ 'b' ]
+    });
+  });
+
+  it('should not count disguised `require` use as import', () => {
+    analyzer.run(parse(`
+      const lib = require('./a');
+
+      lib.a();
+      function a() {
+        const require = () => {};
+        const lib = require('./a');
+        lib.b();
+      }
+    `), 'root');
+
+    analyzer.run(parse(`
+      exports.a = 1;
+      exports.b = 2;
+    `), 'a');
+
+    analyzer.resolve('root', './a', 'a');
+
+    assert.deepEqual(analyzer.getModule('root').getInfo(), EMPTY);
+    assert.deepEqual(analyzer.getModule('a').getInfo(), {
+      bailouts: false,
+      uses: [ 'a' ],
+      declarations: [ 'a', 'b' ]
+    });
+  });
+
   it('should bailout on assignment to `exports`', () => {
     analyzer.run(parse(`
       exports = {};
