@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "CommonJS Tree Shake",
   "main": "lib/shake.js",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/indutny/common-shake.git"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -10,10 +14,7 @@
   "author": "Fedor Indutny <fedor@indutny.com> (http://darksi.de/)",
   "license": "MIT",
   "dependencies": {
-    "acorn": "^5.0.3",
     "escope": "^3.6.0",
-    "estraverse": "^4.2.0",
-    "webpack": "^3.0.0",
-    "webpack-sources": "^1.0.1"
+    "estraverse": "^4.2.0"
   }
 }
