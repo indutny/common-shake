@@ -106,6 +106,80 @@ describe('Analyzer', () => {
     });
   });
 
+  it('should support object destructuring', () => {
+    analyzer.run(parse(`
+      const { a, b } = require('./a');
+    `), 'root');
+
+    analyzer.run(parse(`
+      exports.a = 1;
+      exports.b = 2;
+      exports.c = 3;
+    `), 'a');
+
+    analyzer.resolve('root', './a', 'a');
+
+    assert.deepEqual(analyzer.getModule('root').getInfo(), EMPTY);
+    assert.deepEqual(analyzer.getModule('a').getInfo(), {
+      bailouts: false,
+      uses: [ 'a', 'b' ],
+      declarations: [ 'a', 'b', 'c' ]
+    });
+  });
+
+  it('should not support dynamic object destructuring', () => {
+    analyzer.run(parse(`
+      const prop = 'a';
+      const { [prop]: name } = require('./a');
+    `), 'root');
+
+    analyzer.run(parse(`
+      exports.a = 1;
+      exports.b = 2;
+      exports.c = 3;
+    `), 'a');
+
+    analyzer.resolve('root', './a', 'a');
+
+    assert.deepEqual(analyzer.getModule('root').getInfo(), EMPTY);
+    assert.deepEqual(analyzer.getModule('a').getInfo().bailouts, [
+      {
+        loc: {
+          start: { column: 12, line: 3 },
+          end: { column: 28, line: 3 }
+        },
+        source: 'root',
+        reason: 'Dynamic properties in `require` destructuring'
+      }
+    ]);
+  });
+
+  it('should not support array destructuring', () => {
+    analyzer.run(parse(`
+      const [ a, b ] = require('./a');
+    `), 'root');
+
+    analyzer.run(parse(`
+      exports.a = 1;
+      exports.b = 2;
+      exports.c = 3;
+    `), 'a');
+
+    analyzer.resolve('root', './a', 'a');
+
+    assert.deepEqual(analyzer.getModule('root').getInfo(), EMPTY);
+    assert.deepEqual(analyzer.getModule('a').getInfo().bailouts, [
+      {
+        loc: {
+          start: { column: 12, line: 2 },
+          end: { column: 37, line: 2 }
+        },
+        source: 'root',
+        reason: '`require` used in unknown way'
+      }
+    ]);
+  });
+
   it('should not count disguised `require` use as import', () => {
     analyzer.run(parse(`
       const lib = require('./a');
