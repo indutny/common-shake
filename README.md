@@ -1,4 +1,5 @@
 # CommonJS Tree Shaker
+[![Build Status](https://secure.travis-ci.org/indutny/common-shake.svg)](http://travis-ci.org/indutny/common-shake)
 
 ## Usage
 
