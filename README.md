@@ -24,6 +24,8 @@ a.run(acorn.parse(`
 `, { locations: true }), 'a.js');
 
 a.resolve('index.js', './a.js', 'a.js');
+console.log(a.isSuccess(), a.bailouts);
+// true false
 
 console.log(a.getModule('index.js').getInfo());
 // { bailouts: false, declarations: [ 'a' ], uses: [] }

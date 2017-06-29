@@ -152,6 +152,7 @@ describe('Analyzer', () => {
         reason: 'Dynamic properties in `require` destructuring'
       }
     ]);
+    assert.deepEqual(analyzer.bailouts, false);
   });
 
   it('should not support array destructuring', () => {
@@ -178,6 +179,7 @@ describe('Analyzer', () => {
         reason: '`require` used in unknown way'
       }
     ]);
+    assert.deepEqual(analyzer.bailouts, false);
   });
 
   it('should not count disguised `require` use as import', () => {
@@ -213,7 +215,7 @@ describe('Analyzer', () => {
 
       lib.a();
 
-      var lib = {};
+      var lib = require('./b');
       lib.b();
     `), 'root');
 
@@ -223,6 +225,7 @@ describe('Analyzer', () => {
     `), 'a');
 
     analyzer.resolve('root', './a', 'a');
+    analyzer.resolve('root', './b', 'b');
 
     assert.deepEqual(analyzer.getModule('root').getInfo(), EMPTY);
     assert.deepEqual(analyzer.getModule('a').getInfo(), {
@@ -239,6 +242,21 @@ describe('Analyzer', () => {
       uses: [],
       declarations: [ 'a', 'b' ]
     });
+    assert.deepEqual(analyzer.getModule('b').getInfo(), {
+      bailouts: [
+        {
+          loc: {
+            start: { column: 10, line: 6 },
+            end: { column: 30, line: 6 }
+          },
+          source: 'root',
+          reason: '`require` variable override'
+        }
+      ],
+      uses: [],
+      declarations: []
+    });
+    assert.deepEqual(analyzer.bailouts, false);
   });
 
   it('should bailout on assignment to `exports`', () => {
@@ -257,6 +275,7 @@ describe('Analyzer', () => {
         reason: '`exports` assignment'
       }
     ]);
+    assert.deepEqual(analyzer.bailouts, false);
   });
 
   it('should bailout on assignment to `require`', () => {
@@ -274,6 +293,7 @@ describe('Analyzer', () => {
         reason: '`require` assignment'
       }
     ]);
+    assert.deepEqual(analyzer.bailouts, false);
   });
 
   it('should bailout on dynamic `require`', () => {
@@ -288,6 +308,16 @@ describe('Analyzer', () => {
           end: { column: 40, line: 2 }
         },
         source: null,
+        reason: 'Dynamic argument of `require`'
+      }
+    ]);
+    assert.deepEqual(analyzer.bailouts, [
+      {
+        loc: {
+          start: { column: 18, line: 2 },
+          end: { column: 40, line: 2 }
+        },
+        source: 'root',
         reason: 'Dynamic argument of `require`'
       }
     ]);
@@ -308,6 +338,7 @@ describe('Analyzer', () => {
         reason: '`module.exports` assignment'
       }
     ]);
+    assert.deepEqual(analyzer.bailouts, false);
   });
 
   it('should bailout on dynamic export', () => {
@@ -325,6 +356,7 @@ describe('Analyzer', () => {
         reason: 'Dynamic CommonJS export'
       }
     ]);
+    assert.deepEqual(analyzer.bailouts, false);
   });
 
   it('should bailout on dynamic `module` use', () => {
@@ -342,6 +374,7 @@ describe('Analyzer', () => {
         reason: 'Dynamic `module` use'
       }
     ]);
+    assert.deepEqual(analyzer.bailouts, false);
   });
 
   it('should bailout on dynamic self-use', () => {
@@ -359,6 +392,7 @@ describe('Analyzer', () => {
         reason: 'Dynamic CommonJS use'
       }
     ]);
+    assert.deepEqual(analyzer.bailouts, false);
   });
 
   it('should bailout on dynamic import', () => {
@@ -372,6 +406,16 @@ describe('Analyzer', () => {
     analyzer.resolve('root', './a', 'a');
 
     assert.deepEqual(analyzer.getModule('a').getInfo().bailouts, [
+      {
+        loc: {
+          start: { column: 6, line: 4 },
+          end: { column: 24, line: 4 }
+        },
+        source: 'root',
+        reason: 'Dynamic CommonJS import'
+      }
+    ]);
+    assert.deepEqual(analyzer.bailouts, [
       {
         loc: {
           start: { column: 6, line: 4 },
@@ -403,6 +447,7 @@ describe('Analyzer', () => {
         reason: 'Module property assignment'
       }
     ]);
+    assert.deepEqual(analyzer.bailouts, false);
   });
 
   it('should bailout on escaping imported library', () => {
@@ -425,5 +470,6 @@ describe('Analyzer', () => {
         reason: 'Escaping value or unknown use'
       }
     ]);
+    assert.deepEqual(analyzer.bailouts, false);
   });
 });
