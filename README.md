@@ -1,4 +1,5 @@
 # CommonJS Tree Shaker
+[![NPM version](https://badge.fury.io/js/common-shake.svg)](http://badge.fury.io/js/common-shake)
 [![Build Status](https://secure.travis-ci.org/indutny/common-shake.svg)](http://travis-ci.org/indutny/common-shake)
 
 See [webpack-common-shake][0] for WebPack plugin.
