@@ -8,17 +8,19 @@
     "url": "git+ssh://git@github.com/indutny/common-shake.git"
   },
   "scripts": {
-    "test": "mocha --reporter=spec test/*-test.js"
+    "lint": "eslint lib/*.js lib/**/*.js test/*.js",
+    "test": "mocha --reporter=spec test/*-test.js && npm run lint"
   },
   "keywords": [],
   "author": "Fedor Indutny <fedor@indutny.com> (http://darksi.de/)",
   "license": "MIT",
   "dependencies": {
-    "escope": "^3.6.0",
-    "estraverse": "^4.2.0"
+    "escope": "^3.6.0"
   },
   "devDependencies": {
     "acorn": "^5.0.3",
+    "acorn-dynamic-import": "^2.0.2",
+    "eslint": "^4.1.1",
     "mocha": "^3.4.2"
   }
 }

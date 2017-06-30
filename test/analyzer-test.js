@@ -1,7 +1,8 @@
 'use strict';
+/* globals describe it beforeEach afterEach */
 
 const assert = require('assert');
-const acorn = require('acorn');
+const acorn = require('acorn-dynamic-import').default;
 
 const shake = require('../');
 const Analyzer = shake.Analyzer;
@@ -14,7 +15,12 @@ const EMPTY = {
 
 function parse(source) {
   return acorn.parse(source, {
-    locations: true
+    locations: true,
+    sourceType: 'module',
+    ecmaVersion: 2017,
+    plugins: {
+      dynamicImport: true
+    }
   });
 }
 
@@ -471,5 +477,11 @@ describe('Analyzer', () => {
       }
     ]);
     assert.deepEqual(analyzer.bailouts, false);
+  });
+
+  it('should not fail on dynamic import', () => {
+    assert.doesNotThrow(() => {
+      analyzer.run(parse('import("ohai")'), 'root');
+    });
   });
 });
