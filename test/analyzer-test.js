@@ -155,7 +155,8 @@ describe('Analyzer', () => {
           end: { column: 28, line: 3 }
         },
         source: 'root',
-        reason: 'Dynamic properties in `require` destructuring'
+        reason: 'Dynamic properties in `require` destructuring',
+        level: 'warning'
       }
     ]);
     assert.deepEqual(analyzer.bailouts, false);
@@ -182,7 +183,8 @@ describe('Analyzer', () => {
           end: { column: 37, line: 2 }
         },
         source: 'root',
-        reason: '`require` used in unknown way'
+        reason: '`require` used in unknown way',
+        level: 'warning'
       }
     ]);
     assert.deepEqual(analyzer.bailouts, false);
@@ -242,7 +244,8 @@ describe('Analyzer', () => {
             end: { column: 30, line: 2 }
           },
           source: 'root',
-          reason: '`require` variable override'
+          reason: '`require` variable override',
+          level: 'warning'
         }
       ],
       uses: [],
@@ -256,7 +259,8 @@ describe('Analyzer', () => {
             end: { column: 30, line: 6 }
           },
           source: 'root',
-          reason: '`require` variable override'
+          reason: '`require` variable override',
+          level: 'warning'
         }
       ],
       uses: [],
@@ -278,7 +282,8 @@ describe('Analyzer', () => {
           end: { column: 18, line: 2 }
         },
         source: null,
-        reason: '`exports` assignment'
+        reason: '`exports` assignment',
+        level: 'warning'
       }
     ]);
     assert.deepEqual(analyzer.bailouts, false);
@@ -296,7 +301,8 @@ describe('Analyzer', () => {
           end: { column: 24, line: 2 }
         },
         source: null,
-        reason: '`require` assignment'
+        reason: '`require` assignment',
+        level: 'warning'
       }
     ]);
     assert.deepEqual(analyzer.bailouts, false);
@@ -314,7 +320,8 @@ describe('Analyzer', () => {
           end: { column: 40, line: 2 }
         },
         source: null,
-        reason: 'Dynamic argument of `require`'
+        reason: 'Dynamic argument of `require`',
+        level: 'warning'
       }
     ]);
     assert.deepEqual(analyzer.bailouts, [
@@ -341,7 +348,8 @@ describe('Analyzer', () => {
           end: { column: 31, line: 2 }
         },
         source: null,
-        reason: '`module.exports` assignment'
+        reason: '`module.exports` assignment',
+        level: 'info'
       }
     ]);
     assert.deepEqual(analyzer.bailouts, false);
@@ -359,7 +367,8 @@ describe('Analyzer', () => {
           end: { column: 28, line: 2 }
         },
         source: null,
-        reason: 'Dynamic CommonJS export'
+        reason: 'Dynamic CommonJS export',
+        level: 'warning'
       }
     ]);
     assert.deepEqual(analyzer.bailouts, false);
@@ -377,7 +386,8 @@ describe('Analyzer', () => {
           end: { column: 27, line: 2 }
         },
         source: null,
-        reason: 'Dynamic `module` use'
+        reason: 'Dynamic `module` use',
+        level: 'warning'
       }
     ]);
     assert.deepEqual(analyzer.bailouts, false);
@@ -395,7 +405,8 @@ describe('Analyzer', () => {
           end: { column: 28, line: 2 }
         },
         source: null,
-        reason: 'Dynamic CommonJS use'
+        reason: 'Dynamic CommonJS use',
+        level: 'warning'
       }
     ]);
     assert.deepEqual(analyzer.bailouts, false);
@@ -418,7 +429,8 @@ describe('Analyzer', () => {
           end: { column: 24, line: 4 }
         },
         source: 'root',
-        reason: 'Dynamic CommonJS import'
+        reason: 'Dynamic CommonJS import',
+        level: 'warning'
       }
     ]);
     assert.deepEqual(analyzer.bailouts, [
@@ -450,7 +462,8 @@ describe('Analyzer', () => {
           end: { column: 25, line: 4 }
         },
         source: 'root',
-        reason: 'Module property assignment'
+        reason: 'Module property assignment',
+        level: 'warning'
       }
     ]);
     assert.deepEqual(analyzer.bailouts, false);
@@ -473,7 +486,8 @@ describe('Analyzer', () => {
           end: { column: 14, line: 4 }
         },
         source: 'root',
-        reason: 'Escaping value or unknown use'
+        reason: 'Escaping value or unknown use',
+        level: 'warning'
       }
     ]);
     assert.deepEqual(analyzer.bailouts, false);
