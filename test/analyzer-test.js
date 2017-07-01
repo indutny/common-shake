@@ -517,6 +517,30 @@ describe('Analyzer', () => {
     assert.deepEqual(analyzer.bailouts, false);
   });
 
+  it('should bailout on imported library new call', () => {
+    analyzer.run(parse(`
+      const lib = require('./a');
+
+      new lib();
+    `), 'root');
+
+    analyzer.run(parse(''), 'a');
+    analyzer.resolve('root', './a', 'a');
+
+    assert.deepEqual(analyzer.getModule('a').getInfo().bailouts, [
+      {
+        loc: {
+          start: { column: 6, line: 4 },
+          end: { column: 15, line: 4 }
+        },
+        source: 'root',
+        reason: 'Imported library new call',
+        level: 'info'
+      }
+    ]);
+    assert.deepEqual(analyzer.bailouts, false);
+  });
+
   it('should not fail on dynamic import', () => {
     assert.doesNotThrow(() => {
       analyzer.run(parse('import("ohai")'), 'root');
