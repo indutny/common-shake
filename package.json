@@ -1,6 +1,6 @@
 {
   "name": "common-shake",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "CommonJS Tree Shake",
   "main": "lib/shake.js",
   "repository": {
