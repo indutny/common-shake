@@ -86,12 +86,16 @@ describe('Analyzer', () => {
       exports.c = () => {
         return exports.b();
       };
+
+      exports.d = () => {
+        return module.exports.c();
+      };
     `), 'root');
 
     assert.deepEqual(analyzer.getModule('root').getInfo(), {
       bailouts: false,
-      uses: [ 'b' ],
-      declarations: [ 'a', 'b', 'c' ]
+      uses: [ 'b', 'c' ],
+      declarations: [ 'a', 'b', 'c', 'd' ]
     });
   });
 
@@ -355,6 +359,55 @@ describe('Analyzer', () => {
     assert.deepEqual(analyzer.bailouts, false);
   });
 
+  it('should not bailout on assignment to other `module` properties', () => {
+    analyzer.run(parse(`
+      module.lamports = () => {};
+    `), 'root');
+
+    assert.deepEqual(analyzer.getModule('root').getInfo().bailouts, false);
+    assert.deepEqual(analyzer.bailouts, false);
+  });
+
+  it('should support object literal in `module.exports`', () => {
+    analyzer.run(parse(`
+      module.exports = {
+        a: 1,
+        b: 2
+      };
+    `), 'root');
+
+    assert.deepEqual(analyzer.getModule('root').getInfo(), {
+      bailouts: false,
+      uses: [],
+      declarations: [ 'a', 'b' ]
+    });
+  });
+
+  it('should not support simultaneous `module.exports` and `exports`', () => {
+    analyzer.run(parse(`
+      exports.c = 1;
+      module.exports = {
+        a: 2,
+        b: 3
+      };
+    `), 'root');
+
+    assert.deepEqual(analyzer.getModule('root').getInfo(), {
+      bailouts: [ {
+        loc: {
+          start: { column: 6, line: 3 },
+          end: { column: 7, line: 6 }
+        },
+        source: null,
+        reason: 'Simultaneous assignment to both `exports` and ' +
+                '`module.exports`',
+        level: 'warning'
+      } ],
+      uses: [],
+      declarations: [ 'c', 'a', 'b' ]
+    });
+  });
+
   it('should bailout on dynamic export', () => {
     analyzer.run(parse(`
       exports[Math.random()] = 1;
@@ -396,6 +449,7 @@ describe('Analyzer', () => {
   it('should bailout on dynamic self-use', () => {
     analyzer.run(parse(`
       exports[Math.random()]();
+      module.exports[Math.random()]();
     `), 'root');
 
     assert.deepEqual(analyzer.getModule('root').getInfo().bailouts, [
@@ -403,6 +457,15 @@ describe('Analyzer', () => {
         loc: {
           start: { column: 6, line: 2 },
           end: { column: 28, line: 2 }
+        },
+        source: null,
+        reason: 'Dynamic CommonJS use',
+        level: 'warning'
+      },
+      {
+        loc: {
+          start: { column: 6, line: 3 },
+          end: { column: 35, line: 3 }
         },
         source: null,
         reason: 'Dynamic CommonJS use',
