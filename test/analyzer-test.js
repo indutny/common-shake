@@ -41,7 +41,7 @@ describe('Analyzer', () => {
       exports.b = 2;
 
       !function() {
-        exports.c = 3;
+        module.exports.c = 3;
       }();
     `), 'root');
 
