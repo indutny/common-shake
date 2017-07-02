@@ -2,7 +2,7 @@
 [![NPM version](https://badge.fury.io/js/common-shake.svg)](http://badge.fury.io/js/common-shake)
 [![Build Status](https://secure.travis-ci.org/indutny/common-shake.svg)](http://travis-ci.org/indutny/common-shake)
 
-See [webpack-common-shake][0] for WebPack plugin.
+See [webpack-common-shake][0] for [webpack][1] plugin.
 
 ## Usage
 
@@ -66,3 +66,4 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 [0]: https://github.com/indutny/webpack-common-shake
+[1]: https://webpack.github.io/
