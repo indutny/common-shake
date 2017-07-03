@@ -47,9 +47,9 @@ generated from the modules hierarchy using following API:
 
 ```js
 const Graph = require('common-shake').Graph;
-const graph = new Graph(analyzer.getModules());
+const graph = new Graph('/path/to/working/dir');
 
-console.log(graph.generate());
+console.log(graph.generate(analyzer.getModules()));
 ```
 
 ## LICENSE

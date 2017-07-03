@@ -58,15 +58,28 @@ describe('Analyzer', () => {
 
     const out = graph.generate(analyzer.getModules());
     assertText.equal(out, `digraph {
-      "../root" [shape=box color=black];
-      "{../root}[prop]" [color=black];
-      "../root" -> "{../root}[prop]" [dir=none color=black];
-      "../a" [shape=box color=red];
-      "{../a}[aprop]" [color=red];
-      "../a" -> "{../a}[aprop]" [dir=none color=red];
-      "../root" -> "../a" [label="*"];
-      "../b" [shape=box color=black];
-      "../root" -> "../b" [label="bprop"];
+      ranksep=1.2;
+      subgraph "cluster://../root" {
+        label="../root";
+        color=black;
+        "{../root}/require" [label=require shape=diamond];
+        "{../root}[prop]" [label="prop" color=blue];
+      }
+      subgraph "cluster://../a" {
+        label="../a";
+        color=red;
+        "{../a}/require" [label=require shape=diamond];
+        "{../a}[aprop]" [label="aprop" color=red];
+        "{../a}[[*]]" [label="[*]" color=red];
+      }
+      "{../root}/require" -> "{../a}[[*]]";
+      subgraph "cluster://../b" {
+        label="../b";
+        color=black;
+        "{../b}/require" [label=require shape=diamond];
+        "{../b}[bprop]" [label="bprop" color=black];
+      }
+      "{../root}/require" -> "{../b}[bprop]";
     }`);
   });
 });
