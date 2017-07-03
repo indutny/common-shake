@@ -11,7 +11,10 @@
     "lint": "eslint lib/*.js lib/**/*.js test/*.js",
     "test": "mocha --reporter=spec test/*-test.js && npm run lint"
   },
-  "keywords": [],
+  "files": [
+    "lib"
+  ],
+  "keywords": [ "commonjs", "tree", "shake" ],
   "author": "Fedor Indutny <fedor@indutny.com> (http://darksi.de/)",
   "license": "MIT",
   "dependencies": {
