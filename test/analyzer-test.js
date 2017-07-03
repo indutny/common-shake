@@ -496,16 +496,7 @@ describe('Analyzer', () => {
         level: 'warning'
       }
     ]);
-    assert.deepEqual(analyzer.bailouts, [
-      {
-        loc: {
-          start: { column: 6, line: 4 },
-          end: { column: 24, line: 4 }
-        },
-        source: 'root',
-        reason: 'Dynamic CommonJS import'
-      }
-    ]);
+    assert.deepEqual(analyzer.bailouts, false);
   });
 
   it('should bailout on assignment to imported library', () => {
