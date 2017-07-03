@@ -40,6 +40,18 @@ a.getDeclarations().forEach((decl) => {
 });
 ```
 
+## Graphviz
+
+For debugging and inspection purposes a graph in [dot][2] format may be
+generated from the modules hierarchy using following API:
+
+```js
+const Graph = require('common-shake').Graph;
+const graph = new Graph(analyzer.getModules());
+
+console.log(graph.generate());
+```
+
 ## LICENSE
 
 This software is licensed under the MIT License.
@@ -67,3 +79,4 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 [0]: https://github.com/indutny/webpack-common-shake
 [1]: https://webpack.github.io/
+[2]: http://www.graphviz.org/content/dot-language
