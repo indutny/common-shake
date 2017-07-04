@@ -585,6 +585,37 @@ describe('Analyzer', () => {
     assert.deepEqual(analyzer.bailouts, false);
   });
 
+  it('should bailout on deferred require', () => {
+    analyzer.run(parse(`
+      var lib;
+      lib = require('./a');
+
+      lib.a();
+      lib.b();
+    `), 'root');
+
+    analyzer.run(parse(`
+      exports.a = 1;
+      exports.b = 2;
+      exports.c = 3;
+    `), 'a');
+
+    analyzer.resolve('root', './a', 'a');
+
+    assert.deepEqual(analyzer.getModule('root').getInfo(), EMPTY);
+    assert.deepEqual(analyzer.getModule('a').getInfo().bailouts, [
+      {
+        loc: {
+          start: { column: 12, line: 3 },
+          end: { column: 26, line: 3 }
+        },
+        source: 'root',
+        reason: 'Escaping `require` call',
+        level: 'warning'
+      }
+    ]);
+  });
+
   it('should not bailout on const require argument', () => {
     analyzer.run(parse(`
       const lib = require('./a' + 'b');
