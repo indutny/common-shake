@@ -600,4 +600,12 @@ describe('Analyzer', () => {
       analyzer.run(parse('import("ohai")'), 'root');
     });
   });
+
+  it('should not throw on double-resolve', () => {
+    assert.doesNotThrow(() => {
+      analyzer.resolve('root', './a', 'a');
+      analyzer.resolve('root', './a', 'a');
+      analyzer.resolve('root', './a', 'a');
+    });
+  });
 });
