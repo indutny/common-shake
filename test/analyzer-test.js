@@ -372,7 +372,7 @@ describe('Analyzer', () => {
     analyzer.run(parse(`
       module.exports = {
         a: 1,
-        b: 2
+        "b": 2
       };
     `), 'root');
 
