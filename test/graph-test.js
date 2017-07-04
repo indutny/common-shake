@@ -2,7 +2,8 @@
 /* globals describe it beforeEach afterEach */
 
 const assertText = require('assert-text');
-const acorn = require('acorn-dynamic-import').default;
+const fixtures = require('./fixtures');
+const parse = fixtures.parse;
 
 assertText.options.trim = true;
 
@@ -10,18 +11,7 @@ const shake = require('../');
 const Analyzer = shake.Analyzer;
 const Graph = shake.Graph;
 
-function parse(source) {
-  return acorn.parse(source, {
-    locations: true,
-    sourceType: 'module',
-    ecmaVersion: 2017,
-    plugins: {
-      dynamicImport: true
-    }
-  });
-}
-
-describe('Analyzer', () => {
+describe('Graph', () => {
   let analyzer;
   let graph;
 

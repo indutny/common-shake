@@ -2,7 +2,8 @@
 /* globals describe it beforeEach afterEach */
 
 const assert = require('assert');
-const acorn = require('acorn-dynamic-import').default;
+const fixtures = require('./fixtures');
+const parse = fixtures.parse;
 
 const shake = require('../');
 const Analyzer = shake.Analyzer;
@@ -12,17 +13,6 @@ const EMPTY = {
   uses: [],
   declarations: []
 };
-
-function parse(source) {
-  return acorn.parse(source, {
-    locations: true,
-    sourceType: 'module',
-    ecmaVersion: 2017,
-    plugins: {
-      dynamicImport: true
-    }
-  });
-}
 
 describe('Analyzer', () => {
   let analyzer;
@@ -593,6 +583,24 @@ describe('Analyzer', () => {
       }
     ]);
     assert.deepEqual(analyzer.bailouts, false);
+  });
+
+  it('should not bailout on const require argument', () => {
+    analyzer.run(parse(`
+      const lib = require('./a' + 'b');
+
+      lib.a();
+    `), 'root');
+
+    analyzer.run(parse('exports.a = 1;'), 'ab');
+    analyzer.resolve('root', './ab', 'ab');
+
+    assert.deepEqual(analyzer.getModule('ab').getInfo(), {
+      bailouts: false,
+      declarations: [ 'a' ],
+      uses: [ 'a' ]
+    });
+    assert(analyzer.isSuccess());
   });
 
   it('should not fail on dynamic import', () => {
