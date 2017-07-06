@@ -14,6 +14,10 @@ const EMPTY = {
   declarations: []
 };
 
+function simplifyDecl(decl) {
+  return { type: decl.type, name: decl.name, ast: decl.ast.type };
+}
+
 describe('Analyzer', () => {
   let analyzer;
 
@@ -40,6 +44,14 @@ describe('Analyzer', () => {
       uses: [],
       declarations: [ 'a', 'b', 'c' ]
     });
+
+    const decls = analyzer.getModule('root').getDeclarations();
+
+    assert.deepEqual(decls.map(simplifyDecl), [
+      { type: 'exports', name: 'a', ast: 'AssignmentExpression' },
+      { type: 'exports', name: 'b', ast: 'AssignmentExpression' },
+      { type: 'exports', name: 'c', ast: 'AssignmentExpression' }
+    ]);
   });
 
   it('should find all imported values', () => {
@@ -371,6 +383,12 @@ describe('Analyzer', () => {
       uses: [],
       declarations: [ 'a', 'b' ]
     });
+
+    const decls = analyzer.getModule('root').getDeclarations();
+    assert.deepEqual(decls.map(simplifyDecl), [
+      { type: 'module.exports', name: 'a', ast: 'Property' },
+      { type: 'module.exports', name: 'b', ast: 'Property' }
+    ]);
   });
 
   it('should not support simultaneous `module.exports` and `exports`', () => {
