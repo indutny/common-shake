@@ -15,7 +15,11 @@ const EMPTY = {
 };
 
 function simplifyDecl(decl) {
-  return { type: decl.type, name: decl.name, ast: decl.ast.type };
+  return {
+    type: decl.type,
+    name: decl.name,
+    ast: decl.ast.type
+  };
 }
 
 describe('Analyzer', () => {
@@ -663,6 +667,60 @@ describe('Analyzer', () => {
       analyzer.resolve('root', './a', 'a');
       analyzer.resolve('root', './a', 'a');
       analyzer.resolve('root', './a', 'a');
+    });
+  });
+
+  it('should find recursive dependencies', () => {
+    analyzer.run(parse(`
+      const lib = require('./a');
+      const mlib = require('./ma');
+
+      exports.a = lib.a;
+      exports.b = mlib.a;
+    `), 'root');
+
+    analyzer.run(parse(`
+      exports.a = require('./b').a;
+      exports.c = require('./b').b;
+      exports.b = exports.c;
+    `), 'a');
+
+    analyzer.run(parse(`
+      module.exports = {
+        a: require('./mb').a,
+        b: require('./mb').b
+      };
+    `), 'ma');
+
+    analyzer.getModule('root').forceExport();
+
+    analyzer.resolve('root', './a', 'a');
+    analyzer.resolve('root', './ma', 'ma');
+    analyzer.resolve('a', './b', 'b');
+    analyzer.resolve('ma', './mb', 'mb');
+
+    assert.deepEqual(analyzer.getModule('a').getInfo(), {
+      bailouts: false,
+      uses: [ 'a' ],
+      declarations: [ 'a', 'c', 'b' ]
+    });
+
+    assert.deepEqual(analyzer.getModule('b').getInfo(), {
+      bailouts: false,
+      uses: [ 'a' ],
+      declarations: []
+    });
+
+    assert.deepEqual(analyzer.getModule('ma').getInfo(), {
+      bailouts: false,
+      uses: [ 'a' ],
+      declarations: [ 'a', 'b' ]
+    });
+
+    assert.deepEqual(analyzer.getModule('mb').getInfo(), {
+      bailouts: false,
+      uses: [ 'a' ],
+      declarations: []
     });
   });
 });

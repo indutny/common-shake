@@ -38,6 +38,9 @@ a.getDeclarations().forEach((decl) => {
   console.log(module.isUsed(decl.name) ? 'used' : 'not used');
   console.log(decl.name, decl.ast);
 });
+
+// If you want to mark all exported values of module as used:
+a.getModule('root').forceExport();
 ```
 
 ## Graphviz
