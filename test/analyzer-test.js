@@ -804,4 +804,16 @@ describe('Analyzer', () => {
       declarations: []
     });
   });
+
+  it('should not choke on async/await', () => {
+    assert.doesNotThrow(() => {
+      analyzer.run(parse(`
+        'use strict';
+
+        const fn = async function() {
+          await other();
+        };
+      `), 'root');
+    });
+  });
 });
