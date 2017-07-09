@@ -346,6 +346,43 @@ describe('Analyzer', () => {
     ]);
   });
 
+  it('should not bailout use of `require` properties', () => {
+    analyzer.run(parse(`
+      require.cache[a] = 1;
+    `), 'root');
+
+    assert(analyzer.isSuccess());
+    assert.deepEqual(analyzer.getModule('root').getInfo(), EMPTY);
+  });
+
+  it('should bailout on invalide use of `require`', () => {
+    analyzer.run(parse(`
+      escape(require);
+    `), 'root');
+
+    assert.deepEqual(analyzer.getModule('root').getInfo().bailouts, [
+      {
+        loc: {
+          start: { column: 13, line: 2 },
+          end: { column: 20, line: 2 }
+        },
+        source: null,
+        reason: 'Invalid use of `require`',
+        level: 'warning'
+      }
+    ]);
+    assert.deepEqual(analyzer.bailouts, [
+      {
+        loc: {
+          start: { column: 13, line: 2 },
+          end: { column: 20, line: 2 }
+        },
+        source: 'root',
+        reason: 'Invalid use of `require`'
+      }
+    ]);
+  });
+
   it('should bailout on assignment to `module.exports`', () => {
     analyzer.run(parse(`
       module.exports = () => {};
@@ -395,6 +432,27 @@ describe('Analyzer', () => {
     ]);
   });
 
+  it('should bailout on dynamic keys in `module.exports`', () => {
+    analyzer.run(parse(`
+      module.exports = {
+        [a]: 1,
+        "b": 2
+      };
+    `), 'root');
+
+    assert.deepEqual(analyzer.getModule('root').getInfo().bailouts, [
+      {
+        loc: {
+          start: { column: 8, line: 3 },
+          end: { column: 14, line: 3 }
+        },
+        source: null,
+        reason: 'Dynamic `module.exports` property',
+        level: 'warning'
+      }
+    ]);
+  });
+
   it('should not support simultaneous `module.exports` and `exports`', () => {
     analyzer.run(parse(`
       exports.c = 1;
@@ -403,6 +461,14 @@ describe('Analyzer', () => {
         b: 3
       };
     `), 'root');
+
+    analyzer.run(parse(`
+      module.exports = {
+        a: 2,
+        b: 3
+      };
+      exports.c = 1;
+    `), 'rev-root');
 
     assert.deepEqual(analyzer.getModule('root').getInfo(), {
       bailouts: [ {
@@ -417,6 +483,21 @@ describe('Analyzer', () => {
       } ],
       uses: [],
       declarations: [ 'c', 'a', 'b' ]
+    });
+
+    assert.deepEqual(analyzer.getModule('rev-root').getInfo(), {
+      bailouts: [ {
+        loc: {
+          start: { column: 6, line: 6 },
+          end: { column: 19, line: 6 }
+        },
+        source: null,
+        reason: 'Simultaneous assignment to both `exports` and ' +
+                '`module.exports`',
+        level: 'warning'
+      } ],
+      uses: [],
+      declarations: [ 'a', 'b', 'c' ]
     });
   });
 
