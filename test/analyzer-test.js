@@ -383,6 +383,16 @@ describe('Analyzer', () => {
     ]);
   });
 
+  it('should not bailout on `typeof require`', () => {
+    analyzer.run(parse(`
+      if (typeof require === 'function') {
+        console.log("ok");
+      }
+    `), 'root');
+
+    assert.strictEqual(analyzer.getModule('root').getInfo().bailouts, false);
+  });
+
   it('should bailout on assignment to `module.exports`', () => {
     analyzer.run(parse(`
       module.exports = () => {};
