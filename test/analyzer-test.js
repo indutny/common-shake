@@ -98,9 +98,11 @@ describe('Analyzer', () => {
       };
     `), 'root');
 
+    analyzer.getModule('root').use('d', analyzer.getModule('root'), false);
+
     assert.deepEqual(analyzer.getModule('root').getInfo(), {
       bailouts: false,
-      uses: [ 'b', 'c' ],
+      uses: [ 'd', 'b', 'c' ],
       declarations: [ 'a', 'b', 'c', 'd' ]
     });
   });
@@ -824,6 +826,50 @@ describe('Analyzer', () => {
           await other();
         };
       `), 'root');
+    });
+  });
+
+  it('should shake out unused recursive functions', () => {
+    analyzer.run(parse(`
+      exports.b = function (a) {
+        if (a) exports.b(false);
+      };
+      exports.c = function () {
+        return exports.d();
+      };
+      exports.d = function () {
+        return exports.c;
+      };
+    `), 'root');
+
+    assert.deepEqual(analyzer.getModule('root').getInfo(), {
+      bailouts: false,
+      uses: [],
+      declarations: [ 'b', 'c', 'd' ]
+    });
+  });
+
+  it('should shake out exports that are only used by unused functions', () => {
+    analyzer.run(parse(`
+      const util = require('util');
+
+      util.inherits(A, B);
+    `), 'app');
+
+    analyzer.run(parse(`
+      exports.inherits = function () {};
+      exports.debuglog = function () {};
+      exports.format = function () {
+        exports.debuglog();
+      };
+    `), 'util');
+
+    analyzer.resolve('app', 'util', 'util');
+
+    assert.deepEqual(analyzer.getModule('util').getInfo(), {
+      bailouts: false,
+      uses: [ 'inherits' ],
+      declarations: [ 'inherits', 'debuglog', 'format' ]
     });
   });
 });
