@@ -872,4 +872,67 @@ describe('Analyzer', () => {
       declarations: [ 'inherits', 'debuglog', 'format' ]
     });
   });
+
+  it('should shake out cross-module recursively dependent exports', () => {
+    analyzer.run(parse(`
+      const two = require('./two');
+      exports["do"] = function () {
+        two.dont();
+      };
+    `), 'one');
+    analyzer.run(parse(`
+      const one = require('./one');
+      exports.dont = function () {
+        one.do();
+      };
+    `), 'two');
+
+    analyzer.resolve('one', './two', 'two');
+    analyzer.resolve('two', './one', 'one');
+
+    assert.deepEqual(analyzer.getModule('one').getInfo(), {
+      bailouts: false,
+      uses: [],
+      declarations: [ 'do' ]
+    });
+    assert.deepEqual(analyzer.getModule('two').getInfo(), {
+      bailouts: false,
+      uses: [],
+      declarations: [ 'dont' ]
+    });
+  });
+
+  it('should not shake out used recursively dependent exports', () => {
+    analyzer.run(parse(`
+      const two = require('./two');
+      exports.do = function () {
+        two["dont"]();
+      };
+    `), 'one');
+    analyzer.run(parse(`
+      const one = require('./one');
+      exports.dont = function () {
+        one.do();
+      };
+    `), 'two');
+    analyzer.run(parse(`
+      const two = require('./two');
+      two.dont();
+    `), 'three');
+
+    analyzer.resolve('one', './two', 'two');
+    analyzer.resolve('two', './one', 'one');
+    analyzer.resolve('three', './two', 'two');
+
+    assert.deepEqual(analyzer.getModule('one').getInfo(), {
+      bailouts: false,
+      uses: [ 'do' ],
+      declarations: [ 'do' ]
+    });
+    assert.deepEqual(analyzer.getModule('two').getInfo(), {
+      bailouts: false,
+      uses: [ 'dont' ],
+      declarations: [ 'dont' ]
+    });
+  });
 });
